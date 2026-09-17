@@ -1,7 +1,30 @@
 import os
 
-dictionary = {"string": "STRING_TYPE", "int": "INT_TYPE", "float": "FLOAT_TYPE"}
-operators = {"+": "PLUS", "-": "MINUS", "*": "STAR", "/": "SLASH", "%": "PERCENT"}
+dictionary = {
+    "string": "STRING_TYPE",
+    "int": "INT_TYPE",
+    "float": "FLOAT_TYPE",
+    "bool": "BOOL_TYPE",
+    "if": "IF",
+    "else": "ELSE",
+    "true": "TRUE",
+    "false": "FALSE",
+    "print": "PRINT",
+    "println": "PRINTLN",
+    "while": "WHILE",
+    "for": "FOR",
+    "return": "RETURN",
+}
+operators = {
+    "+": "PLUS",
+    "-": "MINUS",
+    "*": "STAR",
+    "/": "SLASH",
+    "%": "PERCENT",
+    "<": "LESS",
+    ">": "GREATER",
+    "!": "NOT",
+}
 two_digit_operators = {
     "==": "EQUAL_EQUAL",
     "!=": "NOT_EQUAL",
@@ -15,6 +38,16 @@ two_digit_operators = {
     "/=": "SLASH_EQUALS",
     "++": "PLUS_PLUS",
     "--": "MINUS_MINUS",
+}
+punctuation = {
+    "(": "LPAREN",
+    ")": "RPAREN",
+    "{": "LBRACE",
+    "}": "RBRACE",
+    "[": "LBRACKET",
+    "]": "RBRACKET",
+    ",": "COMMA",
+    ".": "DOT",
 }
 
 
@@ -40,12 +73,12 @@ def lex(source):
     start_column = 1
 
     while i < len(source):
-        if source[i].isalpha():
+        if source[i].isalpha() or source[i] == "_":
             word = ""
             start_line = line
             start_column = column
 
-            while i < len(source) and source[i].isalnum():
+            while i < len(source) and (source[i].isalnum() or source[i] == "_"):
                 word += source[i]
                 i += 1
                 column += 1
@@ -91,9 +124,47 @@ def lex(source):
 
             tokens.append(Token(kind, word, start_line, start_column))
 
+        elif source[i] == "/" and i + 1 < len(source) and source[i + 1] == "/":
+            while i < len(source) and source[i] != "\n":
+                i += 1
+                column += 1
+
+        elif source[i] == "/" and i + 1 < len(source) and source[i + 1] == "*":
+            comment_line = line
+            comment_column = column
+            i += 2
+            column += 2
+            closed = False
+
+            while i < len(source):
+                if source[i] == "*" and i + 1 < len(source) and source[i + 1] == "/":
+                    i += 2
+                    column += 2
+                    closed = True
+                    break
+
+                if source[i] == "\n":
+                    line += 1
+                    column = 1
+                else:
+                    column += 1
+
+                i += 1
+
+            if not closed:
+                raise Exception(
+                    f"Unterminated comment starting at line {comment_line}, "
+                    f"column {comment_column}"
+                )
+
+        elif source[i] in punctuation:
+            tokens.append(Token(punctuation[source[i]], source[i], line, column))
+            i += 1
+            column += 1
+
         elif i + 1 < len(source) and source[i] + source[i + 1] in two_digit_operators:
             two = source[i] + source[i + 1]
-            tokens.append(Token(two_digit_operators[two], two, line, column - 1))
+            tokens.append(Token(two_digit_operators[two], two, line, column))
             i += 2
             column += 2
 
@@ -113,20 +184,34 @@ def lex(source):
             column += 1
 
         elif source[i] == '"':
-            start = column
+            start_line = line
+            start_column = column
             word = ""
             i += 1
             column += 1
+            closed = False
 
-            while i < len(source) and source[i] != '"':
+            while i < len(source):
+                if source[i] == '"':
+                    i += 1
+                    column += 1
+                    closed = True
+                    break
+
+                if source[i] == "\n":
+                    break
+
                 word += source[i]
                 i += 1
                 column += 1
 
-            i += 1
-            column += 1
+            if not closed:
+                raise Exception(
+                    f"Unterminated string starting at line {start_line}, "
+                    f"column {start_column}"
+                )
 
-            tokens.append(Token("STRING", word, line, start))
+            tokens.append(Token("STRING", word, start_line, start_column))
 
         elif source[i] == "\n":
             line += 1
@@ -149,3 +234,24 @@ tokens = lex(source)
 
 for token in tokens:
     print(f"{token.type} {token.value!r} line {token.line} col {token.column}")
+
+# Also write the token list to output/tokens.md, so the result can be read and
+# diffed after the run instead of scrolling back through the terminal.
+output_path = os.path.join(os.path.dirname(__file__), "..", "output", "tokens.md")
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+with open(output_path, "w") as out:
+    out.write("# Tokens\n\n")
+    out.write(f"Source: `examples/hello.gnx` ({len(tokens)} tokens)\n\n")
+    out.write("| # | Type | Value | Line | Column |\n")
+    out.write("| --- | --- | --- | --- | --- |\n")
+
+    for number, token in enumerate(tokens, start=1):
+        # wrap the value in backticks so markdown shows symbols such as | and *
+        # literally instead of treating them as table or emphasis syntax
+        value = "`" + repr(token.value) + "`"
+        out.write(
+            f"| {number} | {token.type} | {value} | {token.line} | {token.column} |\n"
+        )
+
+print(f"\nWrote {len(tokens)} tokens to {os.path.relpath(output_path)}")

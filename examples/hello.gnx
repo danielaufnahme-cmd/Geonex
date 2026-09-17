@@ -1,7 +1,18 @@
-int sum = 1 + 1;
-bool same = 1 == 1;
-bool different = 1 != 2;
-bool smaller = 1 <= 2;
-bool bigger = 3 >= 2;
-bool both = 1 && 1;
-bool either = 0 || 1;
+// Geonex lexer test file
+int age = 14;
+float height = 1.80;
+string name = "Daniel";
+bool adult = age >= 18;
+
+/* a block comment
+   spanning two lines */
+if (adult) {
+    println("Adult");
+} else {
+    println(name);
+}
+
+int total = 0;
+while (total < 10) {
+    total += 2;
+}
