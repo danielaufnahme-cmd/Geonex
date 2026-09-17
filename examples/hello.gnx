@@ -1,2 +1,7 @@
-string name = "Daniel";
-string city = "Berlin";
+int sum = 1 + 1;
+bool same = 1 == 1;
+bool different = 1 != 2;
+bool smaller = 1 <= 2;
+bool bigger = 3 >= 2;
+bool both = 1 && 1;
+bool either = 0 || 1;

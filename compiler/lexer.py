@@ -1,5 +1,22 @@
 import os
 
+dictionary = {"string": "STRING_TYPE", "int": "INT_TYPE", "float": "FLOAT_TYPE"}
+operators = {"+": "PLUS", "-": "MINUS", "*": "STAR", "/": "SLASH", "%": "PERCENT"}
+two_digit_operators = {
+    "==": "EQUAL_EQUAL",
+    "!=": "NOT_EQUAL",
+    "<=": "LESS_EQUAL",
+    ">=": "GREATER_EQUAL",
+    "&&": "AND",
+    "||": "OR",
+    "+=": "PLUS_EQUALS",
+    "-=": "MINUS_EQUALS",
+    "*=": "STAR_EQUALS",
+    "/=": "SLASH_EQUALS",
+    "++": "PLUS_PLUS",
+    "--": "MINUS_MINUS",
+}
+
 
 class Token:
     def __init__(self, type, value, line, column):
@@ -33,12 +50,57 @@ def lex(source):
                 i += 1
                 column += 1
 
-            if word == "string":
-                kind = "STRING_TYPE"
+            if word in dictionary:
+                kind = dictionary.get(word)
             else:
                 kind = "IDENTIFIER"
 
             tokens.append(Token(kind, word, start_line, start_column))
+
+        elif source[i].isdigit():
+            word = ""
+            start_line = line
+            start_column = column
+            is_float = False
+
+            while i < len(source):
+                if source[i].isdigit():
+                    word += source[i]
+                elif source[i] == ".":
+                    if is_float:
+                        raise Exception(
+                            f"Second '.' in number at line {line}, column {column}"
+                        )
+                    is_float = True
+                    word += source[i]
+                else:
+                    break
+
+                i += 1
+                column += 1
+
+            if word.endswith("."):
+                raise Exception(
+                    f"Number ends with '.' at line {start_line}, column {start_column}"
+                )
+
+            if is_float:
+                kind = "FLOAT"
+            else:
+                kind = "INT"
+
+            tokens.append(Token(kind, word, start_line, start_column))
+
+        elif i + 1 < len(source) and source[i] + source[i + 1] in two_digit_operators:
+            two = source[i] + source[i + 1]
+            tokens.append(Token(two_digit_operators[two], two, line, column - 1))
+            i += 2
+            column += 2
+
+        elif source[i] in operators:
+            tokens.append(Token(operators[source[i]], source[i], line, column))
+            i += 1
+            column += 1
 
         elif source[i] == "=":
             tokens.append(Token("EQUALS", "=", line, column))
