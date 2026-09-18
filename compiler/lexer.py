@@ -120,7 +120,7 @@ def lex(source):
             if is_float:
                 kind = "FLOAT"
             else:
-                kind = "INT"
+                kind = "INTEGER"
 
             tokens.append(Token(kind, word, start_line, start_column))
 
@@ -227,6 +227,7 @@ def lex(source):
                 f"Unknown character {source[i]!r} at line {line}, column {column}"
             )
 
+    tokens.append(Token("EOF", "", line, column))
     return tokens
 
 

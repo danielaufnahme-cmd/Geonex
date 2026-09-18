@@ -1,18 +1,5 @@
-// Geonex lexer test file
 int age = 14;
 float height = 1.80;
 string name = "Daniel";
-bool adult = age >= 18;
-
-/* a block comment
-   spanning two lines */
-if (adult) {
-    println("Adult");
-} else {
-    println(name);
-}
-
-int total = 0;
-while (total < 10) {
-    total += 2;
-}
+bool active = true;
+bool finished = false;

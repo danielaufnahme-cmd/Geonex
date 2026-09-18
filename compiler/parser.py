@@ -44,23 +44,15 @@ expected = [
     "SEMICOLON",
     "IDENTIFIER",
     "INTEGER",
-    "STRING"
-]
-
-type_tokens = [
-    "STRING_TYPE",
-    "INT_TYPE",
-    "FLOAT_TYPE",
-    "BOOL_TYPE"
-]
-
-value_tokens = [
-    "INT",
     "FLOAT",
     "STRING",
-    "TRUE",
-    "FALSE"
+    "EOF",
 ]
+
+type_tokens = ["STRING_TYPE", "INT_TYPE", "FLOAT_TYPE", "BOOL_TYPE"]
+
+value_tokens = ["INTEGER", "FLOAT", "STRING", "TRUE", "FALSE"]
+
 
 class Parser:
     def __init__(self, lexer_tokens):
@@ -111,11 +103,11 @@ class Parser:
 
         self.expect("SEMICOLON")
 
-        print(
-            f"Variable declaration: type={type_token.type} "
-            f"name={name_token.value} value={value_token.value!r} "
-            f"(line {type_token.line})"
-        )
+        return {
+            "type": type_token.type,
+            "name": name_token.value,
+            "value": value_token.value,
+        }
 
 
 if __name__ == "__main__":
@@ -124,6 +116,7 @@ if __name__ == "__main__":
     parser = Parser(tokens)
     try:
         while parser.current_token().type in type_tokens:
-            parser.parse_variable_declaration()
+            declaration = parser.parse_variable_declaration()
+            print(declaration)
     except SyntaxError as error:
         print(f"Syntax error: {error}")
