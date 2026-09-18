@@ -231,27 +231,3 @@ def lex(source):
 
 
 tokens = lex(source)
-
-for token in tokens:
-    print(f"{token.type} {token.value!r} line {token.line} col {token.column}")
-
-# Also write the token list to output/tokens.md, so the result can be read and
-# diffed after the run instead of scrolling back through the terminal.
-output_path = os.path.join(os.path.dirname(__file__), "..", "output", "tokens.md")
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-with open(output_path, "w") as out:
-    out.write("# Tokens\n\n")
-    out.write(f"Source: `examples/hello.gnx` ({len(tokens)} tokens)\n\n")
-    out.write("| # | Type | Value | Line | Column |\n")
-    out.write("| --- | --- | --- | --- | --- |\n")
-
-    for number, token in enumerate(tokens, start=1):
-        # wrap the value in backticks so markdown shows symbols such as | and *
-        # literally instead of treating them as table or emphasis syntax
-        value = "`" + repr(token.value) + "`"
-        out.write(
-            f"| {number} | {token.type} | {value} | {token.line} | {token.column} |\n"
-        )
-
-print(f"\nWrote {len(tokens)} tokens to {os.path.relpath(output_path)}")
