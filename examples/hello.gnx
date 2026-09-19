@@ -1,6 +1,2 @@
 int age = 14;
-float height = 1.80;
 string name = "Daniel";
-bool active = true;
-bool finished = false;
-int sum = 10 + 5;
