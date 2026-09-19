@@ -232,3 +232,8 @@ def lex(source):
 
 
 tokens = lex(source)
+
+
+if __name__ == "__main__":
+    for token in tokens:
+        print(f"{token.type} {token.value!r} line {token.line} col {token.column}")

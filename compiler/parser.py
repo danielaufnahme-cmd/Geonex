@@ -53,7 +53,7 @@ type_tokens = ["STRING_TYPE", "INT_TYPE", "FLOAT_TYPE", "BOOL_TYPE"]
 
 value_tokens = ["INTEGER", "FLOAT", "STRING", "TRUE", "FALSE"]
 
-arithmetic_operators
+arithmetic_operators = ["PLUS", "MINUS", "STAR", "SLASH", "PERCENT"]
 
 
 class Parser:
