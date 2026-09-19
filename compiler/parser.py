@@ -53,6 +53,8 @@ type_tokens = ["STRING_TYPE", "INT_TYPE", "FLOAT_TYPE", "BOOL_TYPE"]
 
 value_tokens = ["INTEGER", "FLOAT", "STRING", "TRUE", "FALSE"]
 
+arithmetic_operators
+
 
 class Parser:
     def __init__(self, lexer_tokens):
@@ -91,23 +93,25 @@ class Parser:
         name_token = self.current_token()
         self.expect("IDENTIFIER")
         self.expect("EQUALS")
-
-        value_token = self.current_token()
-        if value_token.type in value_tokens:
-            self.expect(value_token.type)
-        else:
-            raise SyntaxError(
-                f"Expected a value, but got {value_token.type} "
-                f"at line {value_token.line}, column {value_token.column}"
-            )
-
+        value = self.parse_expression()
         self.expect("SEMICOLON")
 
         return {
             "type": type_token.type,
             "name": name_token.value,
-            "value": value_token.value,
+            "value": value,
         }
+
+    def parse_expression(self):
+        token = self.current_token()
+        if token.type in value_tokens:
+            self.expect(token.type)
+            return token.value
+        else:
+            raise SyntaxError(
+                f"Expected a value, but got {token.type} "
+                f"at line {token.line}, column {token.column}"
+            )
 
 
 if __name__ == "__main__":
