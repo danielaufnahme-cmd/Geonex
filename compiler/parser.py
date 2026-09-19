@@ -102,10 +102,24 @@ class Parser:
             "value": value,
         }
 
+    def parse_expression_next(self):
+        token = self.current_token()
+        while True:
+            if self.current_token().type in arithmetic_operators:
+                self.expect(self.current_token().type)
+                if self.current_token().type in value_tokens:
+                    self.expect(self.current_token().type)
+                else:
+                    raise SyntaxError(
+                        f"Expected a value, but got {token.type} "
+                        f"at line {token.line}, column {token.column}"
+                    )
+
     def parse_expression(self):
         token = self.current_token()
         if token.type in value_tokens:
             self.expect(token.type)
+            self.parse_expression_next()
             return token.value
         else:
             raise SyntaxError(

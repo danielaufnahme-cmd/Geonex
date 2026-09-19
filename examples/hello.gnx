@@ -1,2 +1,3 @@
-int age = 14;
-string name = "Daniel";
+int age = 14 + 2;
+int age = 14 + ;
+float height = 1.5 + 2.5;
