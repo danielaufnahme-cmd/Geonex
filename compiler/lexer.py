@@ -14,6 +14,9 @@ dictionary = {
     "while": "WHILE",
     "for": "FOR",
     "return": "RETURN",
+    "and": "AND",
+    "or": "OR",
+    "not": "NOT",
 }
 operators = {
     "+": "PLUS",

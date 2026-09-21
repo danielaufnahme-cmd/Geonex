@@ -59,6 +59,29 @@ higher_precedence_arithmetic_operators = ["STAR", "SLASH", "PERCENT"]
 
 lower_precedence_arithmetic_operators = ["PLUS", "MINUS"]
 
+comparison_operators = [
+    "LESS",
+    "GREATER",
+    "LESS_EQUAL",
+    "GREATER_EQUAL",
+    "EQUAL_EQUAL",
+    "NOT_EQUAL",
+]
+
+logical_operators = ["AND", "OR"]
+
+unary_operators = ["NOT"]
+
+assignment_operators = [
+    "EQUALS",
+    "PLUS_EQUALS",
+    "MINUS_EQUALS",
+    "STAR_EQUALS",
+    "SLASH_EQUALS",
+]
+
+increment_operators = ["PLUS_PLUS", "MINUS_MINUS"]
+
 
 class Parser:
     def __init__(self, lexer_tokens):
@@ -84,6 +107,48 @@ class Parser:
                 f"at line {token.line}, column {token.column}"
             )
 
+    def parse_statement(self):
+        token = self.current_token()
+        if token.type in type_tokens:
+            return self.parse_variable_declaration()
+        if token.type == "IDENTIFIER":
+            return self.parse_assignment()
+        raise SyntaxError(
+            f"Expected a statement, but got {token.type} "
+            f"at line {token.line}, column {token.column}"
+        )
+
+    def parse_assignment(self):
+        name_token = self.current_token()
+        self.expect("IDENTIFIER")
+        operator_token = self.current_token()
+
+        if operator_token.type in assignment_operators:
+            self.expect(operator_token.type)
+            value = self.parse_expression()
+            self.expect("SEMICOLON")
+            return {
+                "kind": "assignment",
+                "name": name_token.value,
+                "operator": operator_token.value,
+                "value": value,
+            }
+
+        if operator_token.type in increment_operators:
+            self.expect(operator_token.type)
+            self.expect("SEMICOLON")
+            return {
+                "kind": "increment",
+                "name": name_token.value,
+                "operator": operator_token.value,
+            }
+
+        raise SyntaxError(
+            f"Expected an assignment after '{name_token.value}', "
+            f"but got {operator_token.type} "
+            f"at line {operator_token.line}, column {operator_token.column}"
+        )
+
     def parse_variable_declaration(self):
         type_token = self.current_token()
         if type_token.type in type_tokens:
@@ -101,6 +166,7 @@ class Parser:
         self.expect("SEMICOLON")
 
         return {
+            "kind": "declaration",
             "type": type_token.type,
             "name": name_token.value,
             "value": value,
@@ -113,6 +179,9 @@ class Parser:
             node = self.parse_expression()
             self.expect("RPAREN")
             return node
+        if token.type == "IDENTIFIER":
+            self.expect("IDENTIFIER")
+            return {"kind": "identifier", "name": token.value}
         if token.type not in value_tokens:
             raise SyntaxError(
                 f"Expected a value, but got {token.type} "
@@ -121,23 +190,72 @@ class Parser:
         self.expect(token.type)
         return {"kind": "literal", "type": token.type, "value": token.value}
 
+    def parse_unary(self):
+        token = self.current_token()
+        if token.type in unary_operators:
+            self.expect(token.type)
+            operand = self.parse_unary()
+            return {"kind": "unary", "operator": token.type, "operand": operand}
+        return self.parse_value()
+
     def parse_term(self):
-        node = self.parse_value()
+        node = self.parse_unary()
         while self.current_token().type in higher_precedence_arithmetic_operators:
             operator = self.current_token().type
             self.expect(operator)
-            right = self.parse_value()
-            node = {"kind": "binary", "operator": operator, "left": node, "right": right}
+            right = self.parse_unary()
+            node = {
+                "kind": "binary",
+                "operator": operator,
+                "left": node,
+                "right": right,
+            }
         return node
 
-    def parse_expression(self):
+    def parse_additive(self):
         node = self.parse_term()
         while self.current_token().type in lower_precedence_arithmetic_operators:
             operator = self.current_token().type
             self.expect(operator)
             right = self.parse_term()
-            node = {"kind": "binary", "operator": operator, "left": node, "right": right}
+            node = {
+                "kind": "binary",
+                "operator": operator,
+                "left": node,
+                "right": right,
+            }
         return node
+
+    def parse_comparison(self):
+        node = self.parse_additive()
+        while self.current_token().type in comparison_operators:
+            operator = self.current_token().type
+            self.expect(operator)
+            right = self.parse_additive()
+            node = {
+                "kind": "binary",
+                "operator": operator,
+                "left": node,
+                "right": right,
+            }
+        return node
+
+    def parse_logical(self):
+        node = self.parse_comparison()
+        while self.current_token().type in logical_operators:
+            operator = self.current_token().type
+            self.expect(operator)
+            right = self.parse_comparison()
+            node = {
+                "kind": "binary",
+                "operator": operator,
+                "left": node,
+                "right": right,
+            }
+        return node
+
+    def parse_expression(self):
+        return self.parse_logical()
 
 
 operator_symbols = {
@@ -146,12 +264,30 @@ operator_symbols = {
     "STAR": "*",
     "SLASH": "/",
     "PERCENT": "%",
+    "LESS": "<",
+    "GREATER": ">",
+    "LESS_EQUAL": "<=",
+    "GREATER_EQUAL": ">=",
+    "EQUAL_EQUAL": "==",
+    "NOT_EQUAL": "!=",
+    "AND": "AND",
+    "OR": "OR",
+    "NOT": "NOT",
 }
 
 
 def format_expression(node):
     if node["kind"] == "literal":
         return node["value"]
+
+    if node["kind"] == "identifier":
+        return node["name"]
+
+    if node["kind"] == "unary":
+        operand = format_expression(node["operand"])
+        if node["operand"]["kind"] == "binary":
+            operand = f"({operand})"
+        return f"{operator_symbols[node['operator']]} {operand}"
 
     left = format_expression(node["left"])
     right = format_expression(node["right"])
@@ -167,9 +303,10 @@ if __name__ == "__main__":
 
     parser = Parser(tokens)
     try:
-        while parser.current_token().type in type_tokens:
-            declaration = parser.parse_variable_declaration()
-            declaration["value"] = format_expression(declaration["value"])
-            print(declaration)
+        while parser.current_token().type != "EOF":
+            statement = parser.parse_statement()
+            if "value" in statement:
+                statement["value"] = format_expression(statement["value"])
+            print(statement)
     except SyntaxError as error:
         print(f"Syntax error: {error}")
