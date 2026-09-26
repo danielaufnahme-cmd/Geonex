@@ -53,6 +53,8 @@ type_tokens = ["STRING_TYPE", "INT_TYPE", "FLOAT_TYPE", "BOOL_TYPE"]
 
 value_tokens = ["INTEGER", "FLOAT", "STRING", "TRUE", "FALSE"]
 
+print_tokens = ["PRINT", "PRINTLN"]
+
 arithmetic_operators = ["PLUS", "MINUS", "STAR", "SLASH", "PERCENT"]
 
 higher_precedence_arithmetic_operators = ["STAR", "SLASH", "PERCENT"]
@@ -113,12 +115,20 @@ class Parser:
             return self.parse_variable_declaration()
         if token.type == "IDENTIFIER":
             return self.parse_assignment()
+        if token.type == "IF":
+            return self.parse_if()
+        if token.type == "FOR":
+            return self.parse_for()
+        if token.type == "WHILE":
+            return self.parse_while()
+        if token.type in print_tokens:
+            return self.parse_print()
         raise SyntaxError(
             f"Expected a statement, but got {token.type} "
             f"at line {token.line}, column {token.column}"
         )
 
-    def parse_assignment(self):
+    def parse_assignment(self, expect_semicolon=True):
         name_token = self.current_token()
         self.expect("IDENTIFIER")
         operator_token = self.current_token()
@@ -126,7 +136,8 @@ class Parser:
         if operator_token.type in assignment_operators:
             self.expect(operator_token.type)
             value = self.parse_expression()
-            self.expect("SEMICOLON")
+            if expect_semicolon:
+                self.expect("SEMICOLON")
             return {
                 "kind": "assignment",
                 "name": name_token.value,
@@ -136,7 +147,8 @@ class Parser:
 
         if operator_token.type in increment_operators:
             self.expect(operator_token.type)
-            self.expect("SEMICOLON")
+            if expect_semicolon:
+                self.expect("SEMICOLON")
             return {
                 "kind": "increment",
                 "name": name_token.value,
@@ -148,6 +160,86 @@ class Parser:
             f"but got {operator_token.type} "
             f"at line {operator_token.line}, column {operator_token.column}"
         )
+
+    def parse_block(self):
+        open_token = self.current_token()
+        self.expect("LBRACE")
+        statements = []
+        while self.current_token().type != "RBRACE":
+            if self.current_token().type == "EOF":
+                raise SyntaxError(
+                    f"Expected RBRACE to close the block opened "
+                    f"at line {open_token.line}, column {open_token.column}"
+                )
+            statements.append(self.parse_statement())
+        self.expect("RBRACE")
+        return statements
+
+    def parse_for(self):
+        self.expect("FOR")
+        self.expect("LPAREN")
+        init = self.parse_variable_declaration()
+        condition = self.parse_expression()
+        self.expect("SEMICOLON")
+        update = self.parse_assignment(expect_semicolon=False)
+        self.expect("RPAREN")
+        body = self.parse_block()
+
+        return {
+            "kind": "for",
+            "init": init,
+            "condition": condition,
+            "update": update,
+            "body": body,
+        }
+
+    def parse_while(self):
+        self.expect("WHILE")
+        self.expect("LPAREN")
+        condition = self.parse_expression()
+        self.expect("RPAREN")
+        body = self.parse_block()
+
+        return {"kind": "while", "condition": condition, "body": body}
+
+    def parse_if(self):
+        self.expect("IF")
+        self.expect("LPAREN")
+        condition = self.parse_expression()
+        self.expect("RPAREN")
+        body = self.parse_block()
+
+        else_body = None
+        if self.current_token().type == "ELSE":
+            self.expect("ELSE")
+            if self.current_token().type == "IF":
+                else_body = [self.parse_if()]
+            else:
+                else_body = self.parse_block()
+
+        return {
+            "kind": "if",
+            "condition": condition,
+            "body": body,
+            "else_body": else_body,
+        }
+
+    def parse_print(self):
+        print_token = self.current_token()
+        self.expect(print_token.type)
+        self.expect("LPAREN")
+
+        value = None
+        if print_token.type == "PRINT" or self.current_token().type != "RPAREN":
+            value = self.parse_expression()
+
+        self.expect("RPAREN")
+        self.expect("SEMICOLON")
+        return {
+            "kind": "print",
+            "newline": print_token.type == "PRINTLN",
+            "value": value,
+        }
 
     def parse_variable_declaration(self):
         type_token = self.current_token()
@@ -298,6 +390,41 @@ def format_expression(node):
     return f"{left} {operator_symbols[node['operator']]} {right}"
 
 
+def print_statement(statement, indent=0):
+    padding = "    " * indent
+
+    if statement["kind"] == "if":
+        print(f"{padding}if {format_expression(statement['condition'])}")
+        for inner in statement["body"]:
+            print_statement(inner, indent + 1)
+        if statement["else_body"] is not None:
+            print(f"{padding}else")
+            for inner in statement["else_body"]:
+                print_statement(inner, indent + 1)
+        return
+
+    if statement["kind"] == "for":
+        print(f"{padding}for {format_expression(statement['condition'])}")
+        print(f"{padding}  init:   ", end="")
+        print_statement(statement["init"])
+        print(f"{padding}  update: ", end="")
+        print_statement(statement["update"])
+        for inner in statement["body"]:
+            print_statement(inner, indent + 1)
+        return
+
+    if statement["kind"] == "while":
+        print(f"{padding}while {format_expression(statement['condition'])}")
+        for inner in statement["body"]:
+            print_statement(inner, indent + 1)
+        return
+
+    statement = dict(statement)
+    if statement.get("value") is not None:
+        statement["value"] = format_expression(statement["value"])
+    print(f"{padding}{statement}")
+
+
 if __name__ == "__main__":
     from lexer import tokens
 
@@ -305,8 +432,6 @@ if __name__ == "__main__":
     try:
         while parser.current_token().type != "EOF":
             statement = parser.parse_statement()
-            if "value" in statement:
-                statement["value"] = format_expression(statement["value"])
-            print(statement)
+            print_statement(statement)
     except SyntaxError as error:
         print(f"Syntax error: {error}")

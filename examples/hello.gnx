@@ -1,41 +1,6 @@
-// basic values
-int age = 14;
-float height = 1.80;
-string name = "Daniel";
-bool active = true;
-
-// arithmetic
-int sum = 10 + 5;
-int math = 2 * 3 + 4;
-int remainder = 17 % 5;
-
-// parentheses
-int grouped = (1 + 2) * 3;
-
-// comparisons
-bool smaller = 3 < 5;
-bool equal = 5 + 2 * 3 == 11;
-bool different = 4 != 4;
-
-// logical operators
-bool both = 1 < 2 && 2 < 3;
-bool either = 1 > 2 || true;
-bool inverted = !false;
-
-// complex expression
-bool complex = !(1 == 2) && (3 >= 3 || false);
-
-// identifiers
-int next = age + 1;
-int doubled = age * 2;
-bool adult = age >= 18;
-
-// assignments
-age = 15;
-age += 1;
-age -= 2;
-age *= 3;
-age /= 2;
-age++;
-age--;
-total = next + doubled * 2;
+for (int i = 0; i < 3; i++) {
+    println(i);
+    if (i > 1) {
+        println("big");
+    }
+}
