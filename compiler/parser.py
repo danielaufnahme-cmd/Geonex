@@ -178,7 +178,18 @@ class Parser:
     def parse_for(self):
         self.expect("FOR")
         self.expect("LPAREN")
-        init = self.parse_variable_declaration()
+
+        token = self.current_token()
+        if token.type in type_tokens:
+            init = self.parse_variable_declaration()
+        elif token.type == "IDENTIFIER":
+            init = self.parse_assignment()
+        else:
+            raise SyntaxError(
+                f"Expected a declaration or assignment in for-loop, "
+                f"but got {token.type} at line {token.line}, column {token.column}"
+            )
+
         condition = self.parse_expression()
         self.expect("SEMICOLON")
         update = self.parse_assignment(expect_semicolon=False)
