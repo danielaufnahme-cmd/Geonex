@@ -184,6 +184,8 @@ class Parser:
             init = self.parse_variable_declaration()
         elif token.type == "IDENTIFIER":
             init = self.parse_assignment()
+
+        
         else:
             raise SyntaxError(
                 f"Expected a declaration or assignment in for-loop, "
