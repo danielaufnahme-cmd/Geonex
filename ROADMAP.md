@@ -30,22 +30,22 @@ The roadmap may change as the language develops.
 * [x] Parse string values
 * [x] Parse boolean values
 * [x] Parse semicolons
-* [ ] Parse expressions
-* [ ] Parse arithmetic operators
-* [ ] Parse comparison operators
-* [ ] Parse logical operators
-* [ ] Parse assignments
-* [ ] Parse `if`
-* [ ] Parse `else`
-* [ ] Parse `while`
-* [ ] Parse `for`
+* [x] Parse expressions
+* [x] Parse arithmetic operators
+* [x] Parse comparison operators
+* [x] Parse logical operators
+* [x] Parse assignments
+* [x] Parse `if`
+* [x] Parse `else`
+* [x] Parse `while`
+* [x] Parse `for`
 * [ ] Parse functions
 * [ ] Parse function parameters
 * [ ] Parse explicit function return types
 * [ ] Parse `return`
 * [ ] Parse function calls
-* [ ] Improve parser error handling
-* [ ] Add EOF handling
+* [x] Improve parser error handling
+* [x] Add EOF handling
 
 ## Phase 3 — Abstract Syntax Tree
 
