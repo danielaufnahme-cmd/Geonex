@@ -22,9 +22,7 @@ The format is based on Keep a Changelog.
 
 ### In Progress
 
-* Complete parser
-* Expression parsing
-* Assignment parsing
+* Starting the AST
 
 ### Planned
 
