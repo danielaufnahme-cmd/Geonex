@@ -19,17 +19,16 @@ The format is based on Keep a Changelog.
 * Syntax error reporting
 * Line and column information for tokens
 * Initial parser
-
-### In Progress
-
-* Starting the AST
-
-### Planned
-
-* Abstract Syntax Tree
 * `if` / `else`
 * `while`
 * `for`
+
+### In Progress
+
+* Started Abstract Syntax Tree
+
+### Planned
+
 * Functions
 * Function calls
 * Semantic analysis
