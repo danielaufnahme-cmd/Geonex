@@ -1,3 +1,7 @@
+import token
+from turtle import position
+
+
 expected = [
     "STRING_TYPE",
     "INT_TYPE",
@@ -50,6 +54,8 @@ expected = [
 ]
 
 type_tokens = ["STRING_TYPE", "INT_TYPE", "FLOAT_TYPE", "BOOL_TYPE"]
+
+return_type_tokens = ["STRING_TYPE", "INT_TYPE", "FLOAT_TYPE", "BOOL_TYPE", "VOID_TYPE"]
 
 value_tokens = ["INTEGER", "FLOAT", "STRING", "TRUE", "FALSE"]
 
@@ -109,10 +115,26 @@ class Parser:
                 f"at line {token.line}, column {token.column}"
             )
 
+    def parse_function(self):
+
+
+    def parse_type_statement(self):
+        token = self.tokens[self.position + 2].type
+        if token == "EQUALS":
+            return self.parse_variable_declaration()
+        elif token == "LPAREN":
+            return self.parse_function()
+        else:
+            raise SyntaxError(
+                f"Expected '=' for a variable declaration or '(' for a function "
+                f"after the identifier, but got {token.type} "
+                f"at line {token.line}, column {token.column}"
+            )
+
     def parse_statement(self):
         token = self.current_token()
-        if token.type in type_tokens:
-            return self.parse_variable_declaration()
+        if token.type in return_type_tokens:
+            return self.parse_type_statement()
         if token.type == "IDENTIFIER":
             return self.parse_assignment()
         if token.type == "IF":
@@ -185,7 +207,6 @@ class Parser:
         elif token.type == "IDENTIFIER":
             init = self.parse_assignment()
 
-        
         else:
             raise SyntaxError(
                 f"Expected a declaration or assignment in for-loop, "
