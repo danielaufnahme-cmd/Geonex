@@ -1,6 +1,4 @@
 import token
-from turtle import position
-
 
 expected = [
     "STRING_TYPE",
@@ -115,14 +113,59 @@ class Parser:
                 f"at line {token.line}, column {token.column}"
             )
 
-    def parse_function(self):
+    def parse_parameters(self):
+        parameters = []
+        if self.current_token().type not in type_tokens:
+            return parameters
+        type_token = self.current_token()
+        if type_token.type in type_tokens:
+            self.expect(type_token.type)
+        else:
+            raise SyntaxError(
+                f"Expected a variable, but got {type_token.type} "
+                f"at line {type_token.line}, column {type_token.column}"
+            )
+        name_token = self.current_token()
+        self.expect("IDENTIFIER")
+        parameters.append({"type": type_token.type, "name": name_token.value})
+        while self.current_token().type == "COMMA":
+            self.expect("COMMA")
+            type_token = self.current_token()
+            if type_token.type in type_tokens:
+                self.expect(type_token.type)
+            else:
+                raise SyntaxError(
+                    f"Expected a variable, but got {type_token.type} "
+                    f"at line {type_token.line}, column {type_token.column}"
+                )
+            self.expect(type_token.type)
+            name_token = self.current_token()
+            self.expect("IDENTIFIER")
+            parameters.append({"type": type_token.type, "name": name_token.value})
+        return parameters
 
+    def parse_function(self):
+        return_type_token = self.current_token()
+        self.expect(return_type_token.type)
+        name_token = self.current_token()
+        self.expect("IDENTIFIER")
+        self.expect("LPAREN")
+        parameters = self.parse_parameters()
+        self.expect("RPAREN")
+        body = self.parse_block()
+        return {
+            "kind": "function",
+            "return_type": return_type_token.type,
+            "name": name_token.value,
+            "parameters": parameters,
+            "body": body,
+        }
 
     def parse_type_statement(self):
-        token = self.tokens[self.position + 2].type
-        if token == "EQUALS":
+        token = self.tokens[self.position + 2]
+        if token.type == "EQUALS":
             return self.parse_variable_declaration()
-        elif token == "LPAREN":
+        elif token.type == "LPAREN":
             return self.parse_function()
         else:
             raise SyntaxError(
