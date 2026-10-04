@@ -1,5 +1,3 @@
-import token
-
 expected = [
     "STRING_TYPE",
     "INT_TYPE",
