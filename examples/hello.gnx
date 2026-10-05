@@ -1,3 +1,5 @@
-int main(int a, sdh b) {
-    return 5
+int main(int a, int c) {
+    return 5;
 }
+
+print(add(5, 10));

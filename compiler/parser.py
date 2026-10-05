@@ -111,6 +111,38 @@ class Parser:
                 f"at line {token.line}, column {token.column}"
             )
 
+    def parse_function_call(self):
+        token = self.current_token()
+        name = token.value
+        self.expect("IDENTIFIER")
+        self.expect("LPAREN")
+        arguments = self.parse_function_arguments()
+        self.expect("RPAREN")
+        return {
+            "kind": "function_call",
+            "name": name,
+            "arguments": arguments
+        }
+    
+    def parse_function_arguments(self):
+        arguments = []
+        while self.current_token().type != "RPAREN":
+            if self.current_token().type == "COMMA":
+                self.expect("COMMA")
+            else:
+                arguments.append(self.parse_expression())
+        return arguments
+
+
+    def parse_return(self):
+        self.expect("RETURN")
+        value = self.parse_expression()
+        self.expect("SEMICOLON")
+        return {
+            "kind": "return",
+            "value": value,
+        }
+
     def parse_parameters(self):
         parameters = []
         if self.current_token().type not in type_tokens:
@@ -136,7 +168,6 @@ class Parser:
                     f"Expected a variable, but got {type_token.type} "
                     f"at line {type_token.line}, column {type_token.column}"
                 )
-            self.expect(type_token.type)
             name_token = self.current_token()
             self.expect("IDENTIFIER")
             parameters.append({"type": type_token.type, "name": name_token.value})
@@ -186,6 +217,8 @@ class Parser:
             return self.parse_while()
         if token.type in print_tokens:
             return self.parse_print()
+        if token.type == "RETURN":
+            return self.parse_return()
         raise SyntaxError(
             f"Expected a statement, but got {token.type} "
             f"at line {token.line}, column {token.column}"
@@ -347,8 +380,11 @@ class Parser:
             self.expect("RPAREN")
             return node
         if token.type == "IDENTIFIER":
-            self.expect("IDENTIFIER")
-            return {"kind": "identifier", "name": token.value}
+            if self.tokens[self.position + 1].type == "LPAREN":
+                return self.parse_function_call()
+            else:
+                self.expect("IDENTIFIER")
+                return {"kind": "identifier", "name": token.value}
         if token.type not in value_tokens:
             raise SyntaxError(
                 f"Expected a value, but got {token.type} "
@@ -455,6 +491,13 @@ def format_expression(node):
         if node["operand"]["kind"] == "binary":
             operand = f"({operand})"
         return f"{operator_symbols[node['operator']]} {operand}"
+
+    if node["kind"] == "function_call":
+        formatted_arguments = []
+        for argument in node["arguments"]:
+            formatted_arguments.append(format_expression(argument))
+        arguments_text = ", ".join(formatted_arguments)
+        return f"{node['name']}({arguments_text})"
 
     left = format_expression(node["left"])
     right = format_expression(node["right"])
