@@ -1,5 +1,8 @@
-int main(int a, int c) {
-    return 5;
+int add(int a, int b) {
+    return a + b;
 }
 
-print(add(5, 10));
+int x = add(5, 10);
+print(x);
+print(add(20, 30));
+add(100, 200);

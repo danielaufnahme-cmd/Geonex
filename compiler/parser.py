@@ -118,6 +118,7 @@ class Parser:
         self.expect("LPAREN")
         arguments = self.parse_function_arguments()
         self.expect("RPAREN")
+        self.expect("SEMICOLON")
         return {
             "kind": "function_call",
             "name": name,
@@ -202,13 +203,27 @@ class Parser:
                 f"after the identifier, but got {token.type} "
                 f"at line {token.line}, column {token.column}"
             )
+        
+    def parse_functioncall_or_identifier(self):
+        token = self.tokens[self.position + 1]
+        if token.type == "LPAREN":
+            return self.parse_function_call()
+        elif token.type == "EQUALS":
+            return self.parse_assignment()
+        else:
+            raise SyntaxError(
+                f"Expected '=' for a variable declaration or '(' for a function "
+                f"after the identifier, but got {token.type} "
+                f"at line {token.line}, column {token.column}"
+            )
+
 
     def parse_statement(self):
         token = self.current_token()
         if token.type in return_type_tokens:
             return self.parse_type_statement()
         if token.type == "IDENTIFIER":
-            return self.parse_assignment()
+            return self.parse_functioncall_or_identifier()
         if token.type == "IF":
             return self.parse_if()
         if token.type == "FOR":
