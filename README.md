@@ -8,23 +8,35 @@ The goal of Geonex is to provide a simple, readable syntax while still being sui
 
 Geonex is currently in early development.
 
-The lexer has been implemented and the parser is currently being developed. The language can already recognize and parse basic values, types, operators, and variable declarations.
+The lexer has been implemented and the parser is currently being developed. The parser can already recognize variable declarations, assignments, expressions, conditions, loops, printing, function declarations and function-call statements.
+
+Several language decisions have been made that the parser does not support yet. They are listed under [Language Design](#language-design) and tracked in [`ROADMAP.md`](ROADMAP.md).
+
+There is no AST, semantic analysis or runtime yet, so Geonex programs can be parsed but not run.
 
 This project is not production-ready yet.
 
 ## Current Features
 
-* Integer values
-* Floating-point values
-* String values
-* Boolean values
-* Variable declarations
-* Basic operators
-* `if` / `else` syntax support in the lexer
-* `while` and `for` syntax support in the lexer
-* Function-related keywords
+What the lexer and parser handle today:
+
+* Integer, floating-point, string and boolean values
+* Variable declarations with a value (`int age = 14;`)
+* Assignments (`age = 15;`)
+* Arithmetic operators: `+` `-` `*` `/` `%`
+* Comparison operators: `==` `!=` `<` `>` `<=` `>=`
+* Logical operators: `&&` `||` `!`
+* Operator precedence and parentheses
+* `if` / `else if` / `else`
+* `while`
+* `for` (`for (int i = 0; i < 10; i++)`)
+* `print` and `println`
+* Function declarations with an explicit return type and typed parameters
+* `return` with a value
+* Function calls as statements (`add(5, 10);`)
+* `//` and `/* */` comments
 * Line and column information for tokens
-* Syntax error reporting
+* Syntax error reporting with line and column
 
 Example:
 
@@ -34,6 +46,126 @@ float height = 1.80;
 string name = "Daniel";
 bool active = true;
 ```
+
+## Language Design
+
+These are the decisions that have been made for the language so far. Items marked **not implemented yet** are decided but not yet supported by the compiler.
+
+### Variables
+
+Every variable has a fixed declared type: `int`, `float`, `string` or `bool`.
+
+A variable does not have to be given a value when it is declared.
+
+```gnx
+int x;          // valid: declared without a value
+int y = 5;      // valid
+x = 10;         // valid
+x = "hello";    // type error: x is an int
+```
+
+Geonex does not use Python-style dynamic types. A variable keeps the type it was declared with.
+
+* Declaring without a value (`int x;`): **not implemented yet**
+* Rejecting values of the wrong type: belongs to type checking, **not implemented yet**
+
+### Functions
+
+Functions have explicit return types. `void` means the function returns nothing.
+
+```gnx
+int add(int a, int b) {
+    return a + b;
+}
+
+void sayHello() {
+    println("Hello");
+}
+```
+
+A `void` function may use `return;` to exit early. A non-void function must return a value of its return type; this is checked during semantic analysis, not by the parser.
+
+A function call can be used as a statement or inside an expression:
+
+```gnx
+add(5, 10);
+int result = add(5, 10);
+println(add(5, 10));
+return add(5, 10);
+```
+
+* `void` return type: **not implemented yet**
+* `return;` without a value: **not implemented yet**
+* Function calls inside expressions: **not implemented yet**
+* Checking return types and arguments: belongs to semantic analysis, **not implemented yet**
+
+### Global variables
+
+Global variables must be marked with `global`. A variable is not global unless it is marked.
+
+```gnx
+global int y = 20;
+```
+
+The exact scope and shadowing rules have not been decided yet.
+
+* `global`: **not implemented yet**
+
+### Boolean logic
+
+Geonex uses symbols for boolean logic:
+
+```gnx
+if (x == 5 && y > 2) {
+    println("valid");
+}
+
+if (!done || ready) {
+    println("continue");
+}
+```
+
+`and`, `or` and `not` are not Geonex operators.
+
+* `&&`, `||` and `!` are implemented. The lexer still accepts `and`, `or` and `not`; these are to be removed.
+
+### Conditions
+
+Geonex does not use Python-style truthiness. A condition must be a `bool`.
+
+```gnx
+bool ready = true;
+int count = 3;
+
+if (ready) { }   // valid
+if (count) { }   // error: count is an int, not a bool
+```
+
+* Rejecting non-boolean conditions: belongs to type checking, **not implemented yet**
+
+### Imports
+
+Geonex will support several kinds of imports. Each import ends with a semicolon.
+
+```gnx
+import math;            // Geonex module (no .gnx extension needed)
+import earnings.json;   // data file
+import py.math;         // Python module, through the py namespace
+```
+
+More data formats (and Python libraries such as `py.numpy` or `py.pandas`) may be supported later. How Python code is run from Geonex has not been decided yet.
+
+* Imports: **not implemented yet**
+
+### Planned for later
+
+These are intentionally not part of the language yet:
+
+* `const`
+* Arrays
+* `char`
+* Objects / classes (the keyword has not been chosen)
+* Interoperability with languages other than Python
 
 ## Language Goals
 
@@ -51,13 +183,18 @@ Geonex is being designed with the following goals:
 
 ## Example
 
-A basic Geonex program is intended to look like this:
+A basic Geonex program looks like this:
 
 ```gnx
+int add(int a, int b) {
+    return a + b;
+}
+
 int age = 14;
 string name = "Daniel";
+bool member = true;
 
-if (age >= 13) {
+if (age >= 13 && member) {
     println("Hello " + name);
 }
 ```
@@ -73,8 +210,8 @@ The current development process includes:
 1. Lexer
 2. Parser
 3. Abstract Syntax Tree
-4. Semantic analysis
-5. Code generation / runtime
+4. Semantic analysis and type checking
+5. Code generation / runtime (planned: Geonex bytecode running on the Geonex Virtual Machine, GVM)
 6. Standard library
 7. Tooling
 8. Self-hosting
@@ -86,6 +223,12 @@ The architecture and order of these stages may change as development continues.
 Geonex is currently a development project and does not yet have a stable installation or build system for end users.
 
 To work on the project, clone the repository and follow the development files and examples included in the repository.
+
+To parse a Geonex file and print the parsed statements:
+
+```sh
+python geo.py path/to/file.gnx
+```
 
 ## Contributing
 
@@ -105,18 +248,22 @@ Geonex is experimental software and is provided for development and educational 
 
 ## Roadmap
 
+A short summary. See [`ROADMAP.md`](ROADMAP.md) for the full roadmap.
+
 * [x] Initial lexer
 * [x] Token types
 * [x] Basic value parsing
+* [x] Expression parsing
+* [x] Assignment parsing
+* [x] `if` / `else`
+* [x] `while`
+* [x] `for`
+* [ ] Functions (declarations work; `void` and `return;` are missing)
+* [ ] Function calls (statement calls work; calls inside expressions do not)
+* [ ] `global` variables
+* [ ] Imports
 * [ ] Complete parser
 * [ ] Abstract Syntax Tree
-* [ ] Expression parsing
-* [ ] Assignment parsing
-* [ ] `if` / `else`
-* [ ] `while`
-* [ ] `for`
-* [ ] Functions
-* [ ] Function calls
 * [ ] Semantic analysis
 * [ ] Type checking
 * [ ] Code generation

@@ -18,6 +18,13 @@ The roadmap may change as the language develops.
 * [x] Add booleans
 * [x] Add line and column tracking
 * [x] Add basic lexer error handling
+* [x] Add `//` and `/* */` comments
+* [x] Add `&&`, `||` and `!` operators
+* [ ] Remove the `and`, `or` and `not` keywords (Geonex uses `&&`, `||`, `!`)
+* [ ] Add the `void` keyword
+* [ ] Add the `global` keyword
+* [ ] Add the `import` keyword
+* [ ] Stop the lexer from reading `examples/hello.gnx` when it is imported
 
 ## Phase 2 — Parser
 
@@ -34,18 +41,31 @@ The roadmap may change as the language develops.
 * [x] Parse arithmetic operators
 * [x] Parse comparison operators
 * [x] Parse logical operators
-* [x] Parse assignments
+* [x] Parse `!`
+* [x] Parse assignments (`x = 10;`)
+* [ ] Parse variable declarations without a value (`int x;`)
+* [ ] Parse compound assignments as statements (`y += 5;`); today they only work in a `for` update
+* [ ] Parse `++` / `--` as statements (`y++;`); today they only work in a `for` update
 * [x] Parse `if`
 * [x] Parse `else`
+* [x] Parse `else if`
 * [x] Parse `while`
 * [x] Parse `for`
-* [ ] Parse functions
-* [ ] Parse function parameters
-* [ ] Parse explicit function return types
-* [ ] Parse `return`
-* [ ] Parse function calls
+* [x] Parse `print` / `println`
+* [x] Parse function declarations
+* [x] Parse function parameters
+* [x] Parse explicit function return types (`int`, `float`, `string`, `bool`)
+* [ ] Parse the `void` return type
+* [x] Parse `return` with a value
+* [ ] Parse `return;` without a value
+* [x] Parse function calls as statements (`add(5, 10);`)
+* [ ] Parse function calls inside expressions (`int x = add(5, 10);`, `println(add(5, 10));`, `return add(5, 10);`); the call currently consumes the statement's `;`
+* [ ] Require commas between function arguments (`add(5 6);` is currently accepted)
+* [ ] Parse `global` variable declarations (`global int y = 20;`)
+* [ ] Parse imports (`import math;`, `import earnings.json;`, `import py.math;`)
 * [x] Improve parser error handling
 * [x] Add EOF handling
+* [ ] Report a syntax error instead of crashing when a file ends right after a type (`int` alone raises a Python `IndexError`)
 
 ## Phase 3 — Abstract Syntax Tree
 
@@ -70,9 +90,13 @@ The roadmap may change as the language develops.
 * [ ] Implement variable scope
 * [ ] Implement type checking
 * [ ] Detect undefined variables
-* [ ] Detect invalid assignments
+* [ ] Detect invalid assignments (a variable keeps its declared type: `int x = 5; x = "hello";` is an error)
+* [ ] Require `bool` conditions in `if`, `while` and `for` (no truthiness)
 * [ ] Check function arguments
 * [ ] Check function return types
+* [ ] Check that non-void functions return a value
+* [ ] Allow `return;` only in `void` functions
+* [ ] Implement `global` variables (scope rules still to be decided)
 * [ ] Detect invalid operations
 * [ ] Improve semantic error messages
 
@@ -86,6 +110,9 @@ The roadmap may change as the language develops.
 * [ ] Implement execution of statements
 * [ ] Implement function execution
 * [ ] Implement standard runtime functionality
+* [ ] Import Geonex modules (`import math;` finds `math.gnx`)
+* [ ] Import data files (`import earnings.json;`)
+* [ ] Import Python modules through the `py` namespace (`import py.math;`)
 
 ## Phase 6 — Standard Library
 
@@ -133,3 +160,24 @@ The roadmap may change as the language develops.
 * [ ] Security review
 * [ ] Release candidate
 * [ ] Geonex 1.0
+
+## Future Language Features
+
+Planned, but intentionally not part of the language yet:
+
+* [ ] `const`
+* [ ] Arrays
+* [ ] `char`
+* [ ] Objects / classes (keyword not chosen yet)
+* [ ] More data-file formats for imports
+* [ ] Interoperability with languages other than Python
+
+## Open Design Decisions
+
+These need a decision before they can be implemented:
+
+* Scope and shadowing rules for `global` variables, e.g. whether a local variable may have the same name as a global
+* Whether `global` declarations and imports may appear only at the top of a file or anywhere
+* How `import a.b;` is told apart: a data file (`earnings.json`) or a nested module
+* How Python modules are loaded and called at runtime
+* Whether Geonex has a unary minus (`int z = -5;` is not accepted today)
