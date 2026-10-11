@@ -73,9 +73,7 @@ comparison_operators = [
     "NOT_EQUAL",
 ]
 
-logical_operators = ["AND", "OR"]
-
-unary_operators = ["NOT"]
+unary_operators = ["NOT", "MINUS"]
 
 assignment_operators = [
     "EQUALS",
@@ -92,9 +90,15 @@ class Parser:
     def __init__(self, lexer_tokens):
         self.tokens = lexer_tokens
         self.position = 0
+        self.functions = {}
+        self.calls = []
 
     def current_token(self):
         return self.tokens[self.position]
+
+    def peek(self, offset=1):
+        index = min(self.position + offset, len(self.tokens) - 1)
+        return self.tokens[index]
 
     def advance(self):
         self.position += 1
@@ -112,6 +116,21 @@ class Parser:
                 f"at line {token.line}, column {token.column}"
             )
 
+    def check_function_calls(self):
+        for name, argument_count, token in self.calls:
+            if name not in self.functions:
+                raise SyntaxError(
+                    f"Function '{name}' is not defined "
+                    f"at line {token.line}, column {token.column}"
+                )
+            parameter_count = self.functions[name]
+            if argument_count != parameter_count:
+                raise SyntaxError(
+                    f"Function '{name}' expects {parameter_count} "
+                    f"argument(s), but got {argument_count} "
+                    f"at line {token.line}, column {token.column}"
+                )
+
     def parse_function_call(self):
         token = self.current_token()
         name = token.value
@@ -119,11 +138,17 @@ class Parser:
         self.expect("LPAREN")
         arguments = self.parse_function_arguments()
         self.expect("RPAREN")
+        self.calls.append((name, len(arguments), token))
         return {
             "kind": "function_call",
             "name": name,
             "arguments": arguments,
         }
+
+    def parse_function_call_statement(self):
+        call = self.parse_function_call()
+        self.expect("SEMICOLON")
+        return call
 
     def parse_function_arguments(self):
         arguments = []
@@ -137,7 +162,9 @@ class Parser:
 
     def parse_return(self):
         self.expect("RETURN")
-        value = self.parse_expression()
+        value = None
+        if self.current_token().type != "SEMICOLON":
+            value = self.parse_expression()
         self.expect("SEMICOLON")
         return {
             "kind": "return",
@@ -182,6 +209,7 @@ class Parser:
         self.expect("LPAREN")
         parameters = self.parse_parameters()
         self.expect("RPAREN")
+        self.functions[name_token.value] = len(parameters)
         body = self.parse_block()
         return {
             "kind": "function",
@@ -192,7 +220,7 @@ class Parser:
         }
 
     def parse_type_statement(self):
-        token = self.tokens[self.position + 2]
+        token = self.peek(2)
         if token.type == "EQUALS":
             return self.parse_variable_declaration()
         elif token.type == "LPAREN":
@@ -205,11 +233,9 @@ class Parser:
             )
 
     def parse_functioncall_or_identifier(self):
-        token = self.tokens[self.position + 1]
+        token = self.peek(1)
         if token.type == "LPAREN":
-            call = self.parse_function_call()
-            self.expect("SEMICOLON")
-            return call
+            return self.parse_function_call_statement()
         elif token.type in assignment_operators or token.type in increment_operators:
             return self.parse_assignment()
         else:
@@ -394,7 +420,7 @@ class Parser:
             self.expect("RPAREN")
             return node
         if token.type == "IDENTIFIER":
-            if self.tokens[self.position + 1].type == "LPAREN":
+            if self.peek(1).type == "LPAREN":
                 return self.parse_function_call()
             else:
                 self.expect("IDENTIFIER")
@@ -457,22 +483,34 @@ class Parser:
             }
         return node
 
-    def parse_logical(self):
+    def parse_and(self):
         node = self.parse_comparison()
-        while self.current_token().type in logical_operators:
-            operator = self.current_token().type
-            self.expect(operator)
+        while self.current_token().type == "AND":
+            self.expect("AND")
             right = self.parse_comparison()
             node = {
                 "kind": "binary",
-                "operator": operator,
+                "operator": "AND",
+                "left": node,
+                "right": right,
+            }
+        return node
+
+    def parse_or(self):
+        node = self.parse_and()
+        while self.current_token().type == "OR":
+            self.expect("OR")
+            right = self.parse_and()
+            node = {
+                "kind": "binary",
+                "operator": "OR",
                 "left": node,
                 "right": right,
             }
         return node
 
     def parse_expression(self):
-        return self.parse_logical()
+        return self.parse_or()
 
 
 operator_symbols = {
@@ -526,8 +564,8 @@ def print_statement(statement, indent=0):
     padding = "    " * indent
 
     if statement["kind"] == "function":
-        params = ", ".join(f"{p['type']} {p['name']}" for p in statement["parameters"])
-        print(f"{padding}function {statement['name']}({params}) -> {statement['return_type']}")
+        header = {key: value for key, value in statement.items() if key != "body"}
+        print(f"{padding}{header}")
         for inner in statement["body"]:
             print_statement(inner, indent + 1)
         return
@@ -571,8 +609,11 @@ if __name__ == "__main__":
 
     parser = Parser(tokens)
     try:
+        statements = []
         while parser.current_token().type != "EOF":
-            statement = parser.parse_statement()
+            statements.append(parser.parse_statement())
+        parser.check_function_calls()
+        for statement in statements:
             print_statement(statement)
     except SyntaxError as error:
         print(f"Syntax error: {error}")
