@@ -209,7 +209,12 @@ class Parser:
         self.expect("LPAREN")
         parameters = self.parse_parameters()
         self.expect("RPAREN")
-        self.functions[name_token.value] = len(parameters)
+        if name_token in self.functions:
+            raise SyntaxError(
+                    f"Function with this name already exist"
+                )
+        else:
+            self.functions[name_token.value] = len(parameters)
         body = self.parse_block()
         return {
             "kind": "function",
