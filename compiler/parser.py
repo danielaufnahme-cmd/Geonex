@@ -3,6 +3,7 @@ expected = [
     "INT_TYPE",
     "FLOAT_TYPE",
     "BOOL_TYPE",
+    "VOID_TYPE",
     "IF",
     "ELSE",
     "TRUE",
@@ -118,22 +119,21 @@ class Parser:
         self.expect("LPAREN")
         arguments = self.parse_function_arguments()
         self.expect("RPAREN")
-        self.expect("SEMICOLON")
         return {
             "kind": "function_call",
             "name": name,
-            "arguments": arguments
+            "arguments": arguments,
         }
-    
+
     def parse_function_arguments(self):
         arguments = []
-        while self.current_token().type != "RPAREN":
-            if self.current_token().type == "COMMA":
-                self.expect("COMMA")
-            else:
-                arguments.append(self.parse_expression())
+        if self.current_token().type == "RPAREN":
+            return arguments
+        arguments.append(self.parse_expression())
+        while self.current_token().type == "COMMA":
+            self.expect("COMMA")
+            arguments.append(self.parse_expression())
         return arguments
-
 
     def parse_return(self):
         self.expect("RETURN")
@@ -203,20 +203,20 @@ class Parser:
                 f"after the identifier, but got {token.type} "
                 f"at line {token.line}, column {token.column}"
             )
-        
+
     def parse_functioncall_or_identifier(self):
         token = self.tokens[self.position + 1]
         if token.type == "LPAREN":
-            return self.parse_function_call()
-        elif token.type == "EQUALS":
+            call = self.parse_function_call()
+            self.expect("SEMICOLON")
+            return call
+        elif token.type in assignment_operators or token.type in increment_operators:
             return self.parse_assignment()
         else:
             raise SyntaxError(
-                f"Expected '=' for a variable declaration or '(' for a function "
-                f"after the identifier, but got {token.type} "
-                f"at line {token.line}, column {token.column}"
+                f"Expected an assignment operator or '(' after the identifier, "
+                f"but got {token.type} at line {token.line}, column {token.column}"
             )
-
 
     def parse_statement(self):
         token = self.current_token()
@@ -295,7 +295,6 @@ class Parser:
             init = self.parse_variable_declaration()
         elif token.type == "IDENTIFIER":
             init = self.parse_assignment()
-
         else:
             raise SyntaxError(
                 f"Expected a declaration or assignment in for-loop, "
@@ -526,6 +525,13 @@ def format_expression(node):
 def print_statement(statement, indent=0):
     padding = "    " * indent
 
+    if statement["kind"] == "function":
+        params = ", ".join(f"{p['type']} {p['name']}" for p in statement["parameters"])
+        print(f"{padding}function {statement['name']}({params}) -> {statement['return_type']}")
+        for inner in statement["body"]:
+            print_statement(inner, indent + 1)
+        return
+
     if statement["kind"] == "if":
         print(f"{padding}if {format_expression(statement['condition'])}")
         for inner in statement["body"]:
@@ -555,6 +561,8 @@ def print_statement(statement, indent=0):
     statement = dict(statement)
     if statement.get("value") is not None:
         statement["value"] = format_expression(statement["value"])
+    if statement.get("arguments") is not None:
+        statement["arguments"] = [format_expression(a) for a in statement["arguments"]]
     print(f"{padding}{statement}")
 
 

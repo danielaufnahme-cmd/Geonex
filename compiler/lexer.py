@@ -1,6 +1,7 @@
 import os
 
 dictionary = {
+    "void": "VOID_TYPE",
     "string": "STRING_TYPE",
     "int": "INT_TYPE",
     "float": "FLOAT_TYPE",
