@@ -1,3 +1,6 @@
+import token
+
+
 expected = [
     "STRING_TYPE",
     "INT_TYPE",
@@ -209,10 +212,11 @@ class Parser:
         self.expect("LPAREN")
         parameters = self.parse_parameters()
         self.expect("RPAREN")
-        if name_token in self.functions:
+        if name_token.value in self.functions:
             raise SyntaxError(
-                    f"Function with this name already exist"
-                )
+                f"Function {name_token.value} already exist"
+                f", error at line {name_token.line}, column {name_token.column}"
+            )
         else:
             self.functions[name_token.value] = len(parameters)
         body = self.parse_block()
@@ -622,3 +626,4 @@ if __name__ == "__main__":
             print_statement(statement)
     except SyntaxError as error:
         print(f"Syntax error: {error}")
+
