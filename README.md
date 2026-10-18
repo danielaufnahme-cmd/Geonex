@@ -1,8 +1,8 @@
 # Geonex
 
->NOTE
->this project is made by me only me danielaufnahme-cmd
->the other account geonixsoftware is my seconde account
+> [!NOTE]
+> this project is made by me only me danielaufnahme-cmd
+> the other account geonixsoftware is my seconde account
 
 Geonex is a programming language designed to combine the readability of Python with the structure and performance-oriented design of languages such as Java and C++.
 
