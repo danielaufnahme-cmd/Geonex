@@ -1,6 +1,7 @@
 import os
 
 dictionary = {
+    "global": "GLOBAL",
     "void": "VOID_TYPE",
     "string": "STRING_TYPE",
     "int": "INT_TYPE",

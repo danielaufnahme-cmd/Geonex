@@ -2,6 +2,7 @@ import token
 
 
 expected = [
+    "GLOBAL",
     "STRING_TYPE",
     "INT_TYPE",
     "FLOAT_TYPE",
@@ -95,7 +96,8 @@ class Parser:
         self.position = 0
         self.functions = {}
         self.calls = []
-
+        self.current_function_return_type = None
+        
     def current_token(self):
         return self.tokens[self.position]
 
@@ -164,10 +166,26 @@ class Parser:
         return arguments
 
     def parse_return(self):
+        return_token = self.current_token()
         self.expect("RETURN")
+        if self.current_function_return_type is None:
+            raise SyntaxError(
+                f"'return' outside of a function "
+                f"at line {return_token.line}, column {return_token.column}"
+            )
         value = None
         if self.current_token().type != "SEMICOLON":
             value = self.parse_expression()
+        if self.current_function_return_type == "VOID_TYPE" and value is not None:
+            raise SyntaxError(
+                f"A void function cannot return a value "
+                f"at line {return_token.line}, column {return_token.column}"
+            )
+        if self.current_function_return_type != "VOID_TYPE" and value is None:
+            raise SyntaxError(
+                f"A non-void function must return a value "
+                f"at line {return_token.line}, column {return_token.column}"
+            )
         self.expect("SEMICOLON")
         return {
             "kind": "return",
@@ -219,7 +237,9 @@ class Parser:
             )
         else:
             self.functions[name_token.value] = len(parameters)
+        self.current_function_return_type = return_type_token.type
         body = self.parse_block()
+        self.current_function_return_type = None
         return {
             "kind": "function",
             "return_type": return_type_token.type,
@@ -230,7 +250,7 @@ class Parser:
 
     def parse_type_statement(self):
         token = self.peek(2)
-        if token.type == "EQUALS":
+        if token.type == "EQUALS" or token.type == "SEMICOLON" or self.current_token().type == "GLOBAL":
             return self.parse_variable_declaration()
         elif token.type == "LPAREN":
             return self.parse_function()
@@ -255,7 +275,7 @@ class Parser:
 
     def parse_statement(self):
         token = self.current_token()
-        if token.type in return_type_tokens:
+        if token.type in return_type_tokens or token.type == "GLOBAL":
             return self.parse_type_statement()
         if token.type == "IDENTIFIER":
             return self.parse_functioncall_or_identifier()
@@ -399,6 +419,12 @@ class Parser:
         }
 
     def parse_variable_declaration(self):
+        if self.current_token().type == "GLOBAL":
+            self.expect("GLOBAL")
+            is_global = True
+        else:
+            is_global = False
+
         type_token = self.current_token()
         if type_token.type in type_tokens:
             self.expect(type_token.type)
@@ -410,8 +436,10 @@ class Parser:
 
         name_token = self.current_token()
         self.expect("IDENTIFIER")
-        self.expect("EQUALS")
-        value = self.parse_expression()
+        value = None
+        if self.current_token().type == "EQUALS":
+            self.expect("EQUALS")
+            value = self.parse_expression()
         self.expect("SEMICOLON")
 
         return {
@@ -419,6 +447,7 @@ class Parser:
             "type": type_token.type,
             "name": name_token.value,
             "value": value,
+            "is_global": is_global,
         }
 
     def parse_value(self):
